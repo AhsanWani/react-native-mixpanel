@@ -10,10 +10,15 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableMapKeySetIterator;
 import com.facebook.react.bridge.ReadableType;
 import com.mixpanel.android.mpmetrics.MixpanelAPI;
+import com.mixpanel.android.mpmetrics.Tweak;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 
 /**
  * Created by KevinEJohn on 2/11/16.
@@ -22,11 +27,13 @@ public class RNMixpanelModule extends ReactContextBaseJavaModule implements Life
 
     ReactApplicationContext reactContext;
     MixpanelAPI mixpanel;
+    private HashMap<String, Tweak<String>> tweaks;
 
     public RNMixpanelModule(ReactApplicationContext reactContext) {
         super(reactContext);
         this.reactContext = reactContext;
-
+        this.tweaks = new HashMap<>();
+        tweaks.put("welcomText", MixpanelAPI.stringTweak("welcomText", "Welcome people"));
         // Get lifecycle notifications to flush mixpanel on pause or destroy
         reactContext.addLifecycleEventListener(this);
     }
@@ -35,6 +42,26 @@ public class RNMixpanelModule extends ReactContextBaseJavaModule implements Life
     public String getName() {
         return "RNMixpanel";
     }
+
+    @ReactMethod
+    public void defineTweak(final String varName, final String defaultValue) {
+        final HashMap<String, Tweak<String>> tweaks = new HashMap<>();
+        tweaks.put(varName, MixpanelAPI.stringTweak(varName, defaultValue));
+    }
+
+    @Override
+      public Map<String, Object> getConstants() {
+        final HashMap<String, Object> constants = new HashMap<>();
+
+        //Tweak<Double> gameSpeed = MixpanelAPI.doubleTweak("Game speed", 1.0);
+        for (Map.Entry<String, Tweak<String>> entry : this.tweaks.entrySet()) {
+            String tweakName = entry.getKey();
+            Tweak<String> tweak = entry.getValue();
+            constants.put(tweakName, tweak.get());
+        }
+
+        return constants;
+      }
 
     @ReactMethod
     public void sharedInstanceWithToken(final String token) {
